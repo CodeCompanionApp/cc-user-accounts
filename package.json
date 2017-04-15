@@ -1,0 +1,38 @@
+{
+  "name": "@code-companion/cc-user-accounts",
+  "author": "Brandon Wong <projects@brwong.net> (https://www.brwong.net/)",
+  "version": "0.1.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test-build/main.js",
+    "compile-prod": "cross-env NODE_ENV=production npm run compile",
+    "compile": "npm run compile-src && npm run compile-test",
+    "compile-test": "babel test --out-dir test-build",
+    "compile-src": "babel src --out-dir build",
+    "watch": "nodemon --watch src --watch test --exec \"npm run compile --silent\"",
+    "testwatch": "nodemon --watch src --watch test --exec \"npm run compile --silent && npm test\""
+  },
+  "devDependencies": {
+    "babel-cli": "^6.23.0",
+    "babel-plugin-transform-object-rest-spread": "^6.20.2",
+    "babel-plugin-transform-remove-console": "^6.8.0",
+    "babel-plugin-transform-runtime": "^6.15.0",
+    "babel-preset-env": "^1.3.2",
+    "cross-env": "^3.1.4",
+    "nodemon": "^1.11.0",
+    "tape": "^4.6.3",
+    "tape-promise": "^2.0.1"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "description": "The user managment system in Code Companion.",
+  "keywords": [
+    "code companion",
+    "user",
+    "accounts",
+    "managment",
+    "module"
+  ],
+  "private": true
+}
