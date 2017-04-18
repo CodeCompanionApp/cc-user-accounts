@@ -13,12 +13,15 @@ const passwordHasher = pbkdf2();
 
 import * as main from '../build/main.js';
 
+const desiredPath = 'testuseraccounts';
+
+tapetest('setup', async function setup(t) {
+    t.plan(0);
+    // prepare test area
+    await rimrafPro(desiredPath);
+});
 
 tapetest('create account', async function testProgram(t) {
-    // prepare test area
-    const desiredPath = 'testuseraccounts';
-    await rimrafPro(desiredPath);
-
     // set accounts directory
     t.equal(typeof main.setAccountsDir, 'function', 'setAccountsDir is a function');
     main.setAccountsDir(desiredPath);
@@ -28,7 +31,9 @@ tapetest('create account', async function testProgram(t) {
     const username = 'test001',
         password = 'password-' + randomBytes(8).toString('hex'),
         accountFilePath = pathJoin(desiredPath, username, 'account.json');
-    const created = await main.createAccountPro(username, password);
+    await main.createAccountPro(username, password);
+
+    // verify account creation
     await access(desiredPath);
     await access(pathJoin(desiredPath, username));
     await access(accountFilePath);
@@ -40,20 +45,44 @@ tapetest('create account', async function testProgram(t) {
         t.equal(account.username, username, 'username is correct');
         t.true(account.hasOwnProperty('passwordsalt'), 'has password salt');
         t.true(account.hasOwnProperty('password'), 'has password');
-        passwordHasher({password, salt:account.passwordsalt}, function checkNow(err, pass, salt, hash) {
-            if( err ) {
-                console.log('could not hash password', err);
-                t.fail('could not hash password');
-            }
-            t.equal(account.password, hash, 'password hash is correct');
-        });
+        const {hash} = await getHash({password, salt:account.passwordsalt});
+        t.equal(account.password, hash, 'password hash is correct');
     }
     catch(e) {
         console.log('could not parse JSON', e);
         t.fail('could not parse JSON');
     }
-    await rimrafPro(desiredPath);
+
+    // try to create another account with the same username (should fail)
+    try {
+        await main.createAccountPro(username, password + '2');
+        t.fail('should not be able to create an existing user account');
+    }
+    catch(e) {
+        t.pass('should not be able to create an existing user account');
+    }
+
+    // try to create an account with no initial password (should fail)
+    try {
+        await main.createAccountPro('user-nopass');
+        t.fail('should not be able to create a user account with no initial password');
+    }
+    catch(e) {
+        t.pass('should not be able to create a user account with no initial password');
+    }
+
     t.end();
+});
+
+tapetest('something', async function testing(t) {
+    console.log('something!');
+    t.end();
+});
+
+tapetest('teardown', async function testing(t) {
+    t.plan(0);
+    // clean up and end test
+    await rimrafPro(desiredPath);
 });
 
 
@@ -66,6 +95,20 @@ function rimrafPro(...args) {
             }
             else {
                 resolve(d);
+            }
+        });
+    });
+}
+
+function getHash(opts) {
+    return new Promise(function pro(resolve, reject) {
+        passwordHasher(opts, function checkNow(err, pass, salt, hash) {
+            if( err ) {
+                console.log('could not hash password', err);
+                reject(err);
+            }
+            else {
+                resolve({pass, salt, hash});
             }
         });
     });

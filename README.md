@@ -14,5 +14,6 @@ Changes the directory where user account files are stored. Synchronous function.
 
 Creates a folder named after the username in the accounts directory. Creates a json file that will hold all the user's information.
 
+https://booker.codes/how-to-build-and-publish-es6-npm-modules-today-with-babel/
 
 

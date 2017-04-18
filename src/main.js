@@ -14,6 +14,10 @@ export function setAccountsDir(dirpath) {
 
 
 export async function createAccountPro(username, password) {
+    const passCheck = passwordChecker(password);
+    if( passCheck.error ) {
+        throw new Error(passCheck.error);
+    }
     try {
         await access(accountsDir);
     }
@@ -33,6 +37,13 @@ export async function createAccountPro(username, password) {
     await writeFile(accountFilePath, JSON.stringify(account, true, 2), 'UTF8');
 }
 
+
+function passwordChecker(password) {
+    if( !password ) {
+        return { error: "no password provided" };
+    }
+    return {};
+}
 
 function passwordCreatorPro(password) {
     const opts = {
