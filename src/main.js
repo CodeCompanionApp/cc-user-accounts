@@ -1,6 +1,6 @@
 
 import pbkdf2 from 'pbkdf2-password';
-import { access, mkdir, writeFile, readFile } from 'mz/fs';
+import { access, mkdir, writeFile, readFile, readdir, statSync } from 'mz/fs';
 import { join as pathJoin } from 'path';
 //use file-encryptor to encrypt user data
 
@@ -36,6 +36,21 @@ export async function createAccountPro(username, password) {
         },
         accountFilePath = pathJoin(accountsDir, username, 'account.json');
     await writeFile(accountFilePath, JSON.stringify(account, true, 2), 'UTF8');
+}
+
+export async function listLocalAccountsPro() {
+    try {
+        const directory = await readdir(accountsDir);
+
+        return directory.filter(function removeNonDirectories(file) {
+            const path = pathJoin(accountsDir, file),
+                stat = statSync(path);
+            return stat.isDirectory();
+        });
+    }
+    catch(e) {
+        return [];
+    }
 }
 
 export async function loginPro(username, password) {
@@ -113,6 +128,8 @@ function validPassword(password) {
     if( !password ) {
         return { error: "no password provided" };
     }
+    //TODO: disqualify the most common passwords
+    // https://github.com/danielmiessler/SecLists/blob/master/Passwords/10_million_password_list_top_100000.txt
     return {};
 }
 

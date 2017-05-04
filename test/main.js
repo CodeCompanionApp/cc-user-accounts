@@ -27,6 +27,9 @@ tapetest('create account', async function testProgram(t) {
     t.equal(typeof main.setAccountsDir, 'function', 'setAccountsDir is a function');
     main.setAccountsDir(desiredPath);
 
+    // list all local accounts (should be empty)
+    t.deepEqual(await main.listLocalAccountsPro(), [], 'list of local accounts should be empty');
+
     // create account
     t.equal(typeof main.createAccountPro, 'function', 'createAccountPro is a function');
     await main.createAccountPro(username, password);
@@ -51,6 +54,9 @@ tapetest('create account', async function testProgram(t) {
         t.fail('could not parse JSON');
     }
 
+    // list all local accounts (should contain one account)
+    t.deepEqual(await main.listLocalAccountsPro(), [username], 'list of local accounts should contain one account');
+
     // try to create another account with the same username (should fail)
     try {
         await main.createAccountPro(username, password + '2');
@@ -68,6 +74,9 @@ tapetest('create account', async function testProgram(t) {
     catch(e) {
         t.pass('should not be able to create a user account with no initial password');
     }
+
+    // list all local accounts (should still contain only one account)
+    t.deepEqual(await main.listLocalAccountsPro(), [username], 'list of local accounts should still contain one account');
 
     t.end();
 });
