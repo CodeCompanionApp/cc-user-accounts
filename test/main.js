@@ -1,19 +1,19 @@
 
-import tape from 'tape';
-import _test from 'tape-promise';
+import tapetest from 'tape-promise/tape';
 import { readdir, readFile, access, rmdir } from 'mz/fs';
 import { join as pathJoin } from 'path';
 import rimraf from 'rimraf';
 import { randomBytes } from 'crypto';
 import pbkdf2 from 'pbkdf2-password';
 
-const tapetest = _test(tape);
 
 const passwordHasher = pbkdf2();
 
 import * as main from '../build/main.js';
 
-const desiredPath = 'testuseraccounts';
+const username = 'test001',
+    password = 'password-' + randomBytes(8).toString('hex'),
+    desiredPath = 'testuseraccounts';
 
 tapetest('setup', async function setup(t) {
     t.plan(0);
@@ -28,9 +28,7 @@ tapetest('create account', async function testProgram(t) {
 
     // create account
     t.equal(typeof main.createAccountPro, 'function', 'createAccountPro is a function');
-    const username = 'test001',
-        password = 'password-' + randomBytes(8).toString('hex'),
-        accountFilePath = pathJoin(desiredPath, username, 'account.json');
+    const accountFilePath = pathJoin(desiredPath, username, 'account.json');
     await main.createAccountPro(username, password);
 
     // verify account creation
@@ -74,14 +72,43 @@ tapetest('create account', async function testProgram(t) {
     t.end();
 });
 
-tapetest('something', async function testing(t) {
-    console.log('something!');
+tapetest('test login', async function testing(t) {
+    // try to log in with the correct username and password
+    try {
+        const userInfo = await main.loginPro(username, password);
+        t.equal(typeof userInfo, 'object', 'should return an object');
+        t.false(userInfo.hasOwnProperty('password'), 'should not contain password');
+        t.false(userInfo.hasOwnProperty('passwordsalt'), 'should not contain password salt');
+    }
+    catch(e) {
+        console.error('error', e, e.stack);
+        t.fail('should work');
+    }
+
+    // try to log in with the correct username and incorrect password
+    try {
+        const userInfo = await main.loginPro(username, password + "blahblahblah");
+        t.fail('putting in an incorrect password should not work');
+    }
+    catch(e) {
+        t.equal(e, 'invalid', 'incorrect password should give "invalid" error');
+    }
+
+    // try to log in with an invalid username and incorrect password
+    try {
+        const userInfo = await main.loginPro(username + "blahblahblah", password + "blahblahblah");
+        t.fail('putting in an incorrect username should not work');
+    }
+    catch(e) {
+        t.pass('incorrect username should give error');
+    }
+
     t.end();
 });
 
-tapetest('teardown', async function testing(t) {
-    t.plan(0);
+tapetest.onFinish(async function testing() {
     // clean up and end test
+    console.log('# TEARDOWN');
     await rimrafPro(desiredPath);
 });
 

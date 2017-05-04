@@ -1,6 +1,6 @@
 
 import pbkdf2 from 'pbkdf2-password';
-import { access, mkdir, writeFile } from 'mz/fs';
+import { access, mkdir, writeFile, readFile } from 'mz/fs';
 import { join as pathJoin } from 'path';
 //use file-encryptor to encrypt user data
 
@@ -14,7 +14,7 @@ export function setAccountsDir(dirpath) {
 
 
 export async function createAccountPro(username, password) {
-    const passCheck = passwordChecker(password);
+    const passCheck = validPassword(password);
     if( passCheck.error ) {
         throw new Error(passCheck.error);
     }
@@ -37,12 +37,58 @@ export async function createAccountPro(username, password) {
     await writeFile(accountFilePath, JSON.stringify(account, true, 2), 'UTF8');
 }
 
+export async function loginPro(username, password) {
+    try {
+        const accountFilePath = pathJoin(accountsDir, username, 'account.json'),
+            accountDataFile = await readFile(accountFilePath, 'UTF8'),
+            accountData = JSON.parse(accountDataFile),
+            passwordHit = await comparePasswordPro(password, accountData.password, accountData.passwordsalt);
 
-function passwordChecker(password) {
+        delete accountData.password;
+        delete accountData.passwordsalt;
+
+        if( passwordHit ) {
+            return accountData;
+        }
+        else {
+            return Promise.reject('invalid');
+        }
+
+    }
+    catch(e) {
+        return Promise.reject(e);
+    }
+}
+
+
+function validPassword(password) {
     if( !password ) {
         return { error: "no password provided" };
     }
     return {};
+}
+
+function comparePasswordPro(givenPass, hashedPass, salt) {
+    const opts = {
+        password: givenPass,
+        salt,
+    };
+    return new Promise(function pro(resolve, reject) {
+        passwordHasher(opts, function finishedHashing(err, pass, newSalt, hash) {
+            if( err ) {
+                reject(err);
+                //resolve(false);
+            }
+            else {
+                if( hash === hashedPass ) {
+                    resolve(true);
+                }
+                else {
+                    resolve(false);
+                }
+            }
+        });
+    });
 }
 
 function passwordCreatorPro(password) {
