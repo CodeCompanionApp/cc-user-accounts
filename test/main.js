@@ -13,7 +13,8 @@ import * as main from '../build/main.js';
 
 const username = 'test001',
     password = 'password-' + randomBytes(8).toString('hex'),
-    desiredPath = 'testuseraccounts';
+    desiredPath = 'testuseraccounts',
+    accountFilePath = pathJoin(desiredPath, username, 'account.json');
 
 tapetest('setup', async function setup(t) {
     t.plan(0);
@@ -28,7 +29,6 @@ tapetest('create account', async function testProgram(t) {
 
     // create account
     t.equal(typeof main.createAccountPro, 'function', 'createAccountPro is a function');
-    const accountFilePath = pathJoin(desiredPath, username, 'account.json');
     await main.createAccountPro(username, password);
 
     // verify account creation
@@ -101,6 +101,67 @@ tapetest('test login', async function testing(t) {
     }
     catch(e) {
         t.pass('incorrect username should give error');
+    }
+
+    t.end();
+});
+
+tapetest('change account settings', async function testing(t) {
+    const fileContents = await readFile(accountFilePath, 'UTF8');
+    let account;
+    try {
+        account = JSON.parse(fileContents);
+    }
+    catch(e) {
+        t.fail('error in parsing JSON');
+    }
+
+    // add photo
+    try {
+        const photo1 = 'photo_of_me.jpg',
+            addedAttributes = {
+                photo: photo1,
+                ...account,
+            };
+
+        await main.accountSettingsPro(username, {photo: photo1});
+        const newFileContents = await readFile(accountFilePath, 'UTF8'),
+            alteredAccount = JSON.parse(newFileContents);
+        t.deepEqual(alteredAccount, addedAttributes, 'added attribute');
+    }
+    catch(e) {
+        console.error('error', e, e.stack);
+        t.fail('adding attribute should not fail');
+    }
+
+    // change photo
+    try {
+        const photo2 = 'photo_of_me-cropped.jpg',
+            modifiedAttributes = {
+                photo: photo2,
+                ...account,
+            };
+
+        await main.accountSettingsPro(username, {photo: photo2});
+        const newFileContents = await readFile(accountFilePath, 'UTF8'),
+            alteredAccount = JSON.parse(newFileContents);
+        t.deepEqual(alteredAccount, modifiedAttributes, 'modified attribute');
+    }
+    catch(e) {
+        console.error('error', e, e.stack);
+        t.fail('modifying attribute should not fail');
+    }
+
+    // remove photo
+    try {
+        await main.accountSettingsPro(username, {}, ['photo']);
+        const newFileContents = await readFile(accountFilePath, 'UTF8'),
+            alteredAccount = JSON.parse(newFileContents);
+        t.deepEqual(alteredAccount, account, 'removed attribute');
+    }
+    catch(e) {
+        console.error('error', e, e.stack);
+        t.fail('removing attribute should not fail');
     }
 
     t.end();

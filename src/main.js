@@ -4,7 +4,8 @@ import { access, mkdir, writeFile, readFile } from 'mz/fs';
 import { join as pathJoin } from 'path';
 //use file-encryptor to encrypt user data
 
-const passwordHasher = pbkdf2();
+const passwordHasher = pbkdf2(),
+    protectedAttributes = ['username', 'password', 'passwordsalt'];
 
 let accountsDir = 'useraccounts';
 
@@ -54,6 +55,41 @@ export async function loginPro(username, password) {
             return Promise.reject('invalid');
         }
 
+    }
+    catch(e) {
+        return Promise.reject(e);
+    }
+}
+
+//TODO: make this function accept some sort of user-specific token rather than the username
+export async function accountSettingsPro(username, addChangeSettings, removeSettings) {
+    try {
+        const accountFilePath = pathJoin(accountsDir, username, 'account.json'),
+            accountDataFile = await readFile(accountFilePath, 'UTF8');
+        let accountData = JSON.parse(accountDataFile);
+
+        if( addChangeSettings ) {
+            // do not alter protected attributes
+            const safe = protectedAttributes.reduce(function removeProtected(acc, protectedAtt) {
+                    const {[protectedAtt]:garbage, ...rem} = acc;
+                    return rem;
+                }, addChangeSettings);
+
+            accountData = {
+                ...accountData,
+                ...safe,
+            };
+        }
+        if( removeSettings && removeSettings.length ) {
+            accountData = removeSettings
+            .filter(x => !protectedAttributes.includes(x))
+            .reduce(function removeAttribute(acc, att) {
+                const {[att]:garbage, ...rem} = acc;
+                return rem;
+            }, accountData);
+        }
+
+        await writeFile(accountFilePath, JSON.stringify(accountData, true, 2), 'UTF8');
     }
     catch(e) {
         return Promise.reject(e);
