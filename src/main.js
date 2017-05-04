@@ -62,7 +62,7 @@ export async function loginPro(username, password) {
 }
 
 //TODO: make this function accept some sort of user-specific token rather than the username
-export async function accountSettingsPro(username, addChangeSettings, removeSettings) {
+export async function modifyAccountSettingsPro(username, addChangeSettings, removeSettings) {
     try {
         const accountFilePath = pathJoin(accountsDir, username, 'account.json'),
             accountDataFile = await readFile(accountFilePath, 'UTF8');
@@ -70,10 +70,7 @@ export async function accountSettingsPro(username, addChangeSettings, removeSett
 
         if( addChangeSettings ) {
             // do not alter protected attributes
-            const safe = protectedAttributes.reduce(function removeProtected(acc, protectedAtt) {
-                    const {[protectedAtt]:garbage, ...rem} = acc;
-                    return rem;
-                }, addChangeSettings);
+            const safe = protectedAttributes.reduce(removeAttribute, addChangeSettings);
 
             accountData = {
                 ...accountData,
@@ -83,10 +80,7 @@ export async function accountSettingsPro(username, addChangeSettings, removeSett
         if( removeSettings && removeSettings.length ) {
             accountData = removeSettings
             .filter(x => !protectedAttributes.includes(x))
-            .reduce(function removeAttribute(acc, att) {
-                const {[att]:garbage, ...rem} = acc;
-                return rem;
-            }, accountData);
+            .reduce(removeAttribute, accountData);
         }
 
         await writeFile(accountFilePath, JSON.stringify(accountData, true, 2), 'UTF8');
@@ -96,6 +90,24 @@ export async function accountSettingsPro(username, addChangeSettings, removeSett
     }
 }
 
+export async function accountSettingsPro(username) {
+    try {
+        const accountFilePath = pathJoin(accountsDir, username, 'account.json'),
+            accountDataFile = await readFile(accountFilePath, 'UTF8'),
+            accountData = JSON.parse(accountDataFile),
+            safe = protectedAttributes.reduce(removeAttribute, accountData);
+
+        return safe;
+    }
+    catch(e) {
+        return Promise.reject(e);
+    }
+}
+
+function removeAttribute(acc, attrib) {
+    const {[attrib]:garbage, ...rem} = acc;
+    return rem;
+}
 
 function validPassword(password) {
     if( !password ) {

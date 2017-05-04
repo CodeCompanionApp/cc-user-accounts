@@ -124,7 +124,7 @@ tapetest('change account settings', async function testing(t) {
                 ...account,
             };
 
-        await main.accountSettingsPro(username, {photo: photo1});
+        await main.modifyAccountSettingsPro(username, {photo: photo1});
         const newFileContents = await readFile(accountFilePath, 'UTF8'),
             alteredAccount = JSON.parse(newFileContents);
         t.deepEqual(alteredAccount, addedAttributes, 'added attribute');
@@ -142,7 +142,7 @@ tapetest('change account settings', async function testing(t) {
                 ...account,
             };
 
-        await main.accountSettingsPro(username, {photo: photo2});
+        await main.modifyAccountSettingsPro(username, {photo: photo2});
         const newFileContents = await readFile(accountFilePath, 'UTF8'),
             alteredAccount = JSON.parse(newFileContents);
         t.deepEqual(alteredAccount, modifiedAttributes, 'modified attribute');
@@ -154,7 +154,7 @@ tapetest('change account settings', async function testing(t) {
 
     // remove photo
     try {
-        await main.accountSettingsPro(username, {}, ['photo']);
+        await main.modifyAccountSettingsPro(username, {}, ['photo']);
         const newFileContents = await readFile(accountFilePath, 'UTF8'),
             alteredAccount = JSON.parse(newFileContents);
         t.deepEqual(alteredAccount, account, 'removed attribute');
